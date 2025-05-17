@@ -2,49 +2,45 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    /// <summary>
-    /// Access the player <see cref="Transform"/> to follow
-    /// Toggle free look or right-click drag
-    /// Rotation speed around the player
-    /// Camera offset from the player
-    /// Invert vertical camera movement
-    /// </summary>
-
     public Transform player;
-    public Vector3 offset = new Vector3(0, 2, -5);
-    public float rotationSpeed = 100f;
-    public bool requireRightClick = true;
-    public bool isInverted = false; // ? Add this to toggle Y-axis inversion
+    public Vector3 offset;
+    public float sensitivity = 3.0f;
+    public bool allowFreeLook = true;
+    public bool isInverted;
 
-    private float yaw = 0f;
-    private float pitch = 0f;
+    private float yaw = 0.0f;
+    private float pitch = 0.0f;
 
-    private void Start()
+    void Start()
     {
-        transform.position = player.position + offset; // Set initial position
-        transform.LookAt(player);
+        offset = transform.position - player.position;
+        isInverted = PlayerPrefs.GetInt("InvertY", 0) == 1;
     }
 
-    private void LateUpdate()
+    void LateUpdate()
     {
-        // Camera follows player
-        transform.position = player.position + offset;
-
-        // Rotate camera based on mouse movement
-        if (!requireRightClick || Input.GetMouseButton(1)) // Right-click to rotate
+        FollowPlayer();
+        if (allowFreeLook || Input.GetMouseButton(1))
         {
-            float mouseX = Input.GetAxis("Mouse X") * rotationSpeed * Time.deltaTime;
-            float mouseY = Input.GetAxis("Mouse Y") * rotationSpeed * Time.deltaTime;
-
-            // Invert Y axis if needed
-            if (isInverted)
-                mouseY = -mouseY;
-
-            yaw += mouseX;
-            pitch -= mouseY;
-            pitch = Mathf.Clamp(pitch, -40f, 80f); // Prevents extreme up/down rotation
-
-            transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+            RotateCamera();
         }
+    }
+
+    void FollowPlayer()
+    {
+        transform.position = player.position + offset;
+    }
+
+    void RotateCamera()
+    {
+        float mouseX = Input.GetAxis("Mouse X") * sensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * sensitivity;
+
+        yaw += mouseX;
+        pitch -= isInverted ? -mouseY : mouseY;
+
+        pitch = Mathf.Clamp(pitch, -30f, 60f);
+        transform.eulerAngles = new Vector3(pitch, yaw, 0.0f);
+        offset = Quaternion.Euler(pitch, yaw, 0.0f) * new Vector3(0, 0, -offset.magnitude);
     }
 }

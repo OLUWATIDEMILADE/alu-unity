@@ -4,31 +4,44 @@ public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 5f;
     public float jumpForce = 7f;
-    public float fallThreshold = -30f; // Height at which the player resets
+    public float fallThreshold = -30f;
 
     private Rigidbody rb;
-    private Vector3 startPosition; // Store the initial position
+    private Animator animator;
+    private Vector3 startPosition;
+
+    private bool isGrounded;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        startPosition = transform.position; // Save start position
+        animator = GetComponent<Animator>();
+        startPosition = transform.position;
     }
 
     private void Update()
     {
+        // Movement
         float moveX = Input.GetAxis("Horizontal");
         float moveZ = Input.GetAxis("Vertical");
-
         Vector3 moveDirection = new Vector3(moveX, 0f, moveZ).normalized;
+
+        bool isMoving = moveDirection.magnitude > 0.1f;
+        animator.SetBool("isMoving", isMoving);
+
         transform.Translate(moveDirection * moveSpeed * Time.deltaTime, Space.World);
 
-        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+        // Jump
+        isGrounded = IsGrounded();
+        animator.SetBool("isGrounded", isGrounded);
+
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             rb.velocity = new Vector3(rb.velocity.x, jumpForce, rb.velocity.z);
+            animator.SetTrigger("jump");
         }
 
-        // Reset player if they fall
+        // Reset if player falls
         if (transform.position.y < fallThreshold)
         {
             Respawn();
@@ -43,7 +56,7 @@ public class PlayerController : MonoBehaviour
     private void Respawn()
     {
         Debug.Log("Player fell! Respawning...");
-        transform.position = startPosition; // Reset position
-        rb.velocity = Vector3.zero; // Reset momentum
+        transform.position = startPosition;
+        rb.velocity = Vector3.zero;
     }
 }
